@@ -1,15 +1,19 @@
 package com.pinpai.domain;
 
+import java.io.Serializable;
 import java.sql.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 @Entity
 @Table(name="comment")
-public class Comment {
+public class Comment implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
 	
 	private String comm_id;//评论id
 	private String comm_urlid;//评论所属帖子的id
@@ -21,6 +25,20 @@ public class Comment {
 	private Date craw_time;//爬取时间
 	private long is_crawler;
 	private long isExtracted;
+	
+	//对应posts表
+	private Post post_comm_urlid;
+	
+	public static final Comment NULL = new CommentNULL();
+	
+	
+	@Transient
+	public Post getPost_comm_urlid() {
+		return post_comm_urlid;
+	}
+	public void setPost_comm_urlid(Post post_comm_urlid) {
+		this.post_comm_urlid = post_comm_urlid;
+	}
 	
 	@Id
 	@Column(name="comm_id",length=60,nullable = false)

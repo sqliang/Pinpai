@@ -1,15 +1,27 @@
 package com.pinpai.domain;
 
+import java.io.Serializable;
 import java.sql.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Transient;
+
+import com.pinpai.serviceManager.CommentManager;
+import com.pinpai.serviceManager.JManager;
+import com.pinpai.serviceManager.PostManager;
+import com.pinpai.util.bean.BeanUtil;
+import com.pinpai.util.json.JsonUtil;
+
 
 @Entity
 @Table(name="posts")
-public class Post {
+public class Post implements Serializable {
+	private static final long serialVersionUID = 1L;
 	
 	private String id;//论坛帖子id
 	private String addr_id;//论坛地址id
@@ -25,6 +37,56 @@ public class Post {
 	private long is_crawler;
 	private long isExtracted;
 	
+	//对应从表comments
+	private List<Comment> commentids;
+	public static final Comment NULL = new CommentNULL();
+	
+	public List<Comment> loadCommentids(String sqlkey,String... propertys){
+		CommentManager commentManager = (CommentManager)BeanUtil.load("commentManagerImpl");
+		if(commentids==null){
+			if (id == "" || id == null) {
+				commentids = new ArrayList();
+			} else {
+				if(propertys!=null&&propertys.length!=0){
+					StringBuffer hql = new StringBuffer("select  ");
+					for(int i = 0;i<propertys.length;i++){
+						hql.append("a."+propertys[i]);
+						if(i!=propertys.length-1){
+							hql.append(",");
+						}
+					}
+					hql.append(" from Commtent a where id = ?");
+					JManager jManager = (JManager)BeanUtil.load("jManagerImpl");
+					commentids = (List<Comment>) JsonUtil.toList(jManager.getJsonArray(hql.toString(), id),Comment.class);
+				}else{
+
+					commentids = commentManager.findbyHql(" and id="+id + sqlkey);
+				}
+			}
+		}
+		return commentids;
+	}
+	
+	@Transient
+	public List<Comment> getCommentids() {
+		return commentids;
+	}
+	public void setCommentids(List<Comment> commentids) {
+		this.commentids = commentids;
+	}
+	public  void reloadForegnKey(){
+		if(commentids!=null){
+			for(Comment comment : commentids){
+				comment.setComm_urlid(id);
+			}
+		}
+
+	}
+	public static Post load(Serializable id){
+		PostManager postManager = (PostManager) BeanUtil.load("postManagerImpl");
+		Post post = postManager.get(id);
+		return post;
+	}
 	
 	@Id
 	@Column(name="id",length=200,nullable = false)
